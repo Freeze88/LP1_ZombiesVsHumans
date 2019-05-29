@@ -6,13 +6,11 @@ using System.Threading.Tasks;
 
 namespace ZombiesVsHumans
 {
-    class Program
+    public partial class Map
     {
-        static void Main(string[] args)
+        internal partial class Zombie : MapPiece
         {
-            Application.Initialize();
-            Application.Run();
+            public Zombie() : base('z', ConsoleColor.Red) { }
         }
     }
 }
-
