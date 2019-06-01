@@ -31,7 +31,7 @@ namespace ZombiesVsHumans
 
             uint playerCount = 0;
             Console.WriteLine("Player Count : ");
-            while (!GetUInt(Console.ReadLine(), ref playerCount) && playerCount + zombieCount >= (mapWidth * mapHeight) - 1) ;
+            while (!GetUInt(Console.ReadLine(), ref playerCount) && playerCount + zombieCount >= (mapWidth * mapHeight) - 1 && playerCount == 0) ;
 
             uint playerControlCount = 0;
             Console.WriteLine("How many players will you control : ");
@@ -49,8 +49,6 @@ namespace ZombiesVsHumans
                 Console.Clear();
 
                 map.Simulate();
-                string s = Console.ReadLine();
-                quit = s == "y";
 
 
             }

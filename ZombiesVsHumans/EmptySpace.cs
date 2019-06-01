@@ -6,14 +6,14 @@ namespace ZombiesVsHumans
 {
     class EmptySpace : Map.MapPiece
     {
-        public EmptySpace() : base(' ', ConsoleColor.White) { }
+        public EmptySpace(Map map) : base(map,' ', ConsoleColor.White) { }
 
         public override void Print()
         {
             ConsoleColor color = Console.ForegroundColor;
 
             Console.ForegroundColor = this.color;
-            Console.Write(".");
+            Console.Write(" . ");
 
             Console.ForegroundColor = color;
         }
