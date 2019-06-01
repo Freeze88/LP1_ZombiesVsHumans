@@ -43,20 +43,6 @@ namespace ZombiesVsHumans
             public float Hash { get; private set; }
         }
 
-        internal class EmptySpace : MapPiece
-        {
-            public EmptySpace() : base(' ', ConsoleColor.White) { }
-
-            public override void Print()
-            {
-                ConsoleColor color = Console.ForegroundColor;
-
-                Console.ForegroundColor = this.color;
-                Console.Write(string.Format("{0:F2} ; ", Hash));
-
-                Console.ForegroundColor = color;
-            }
-        }
 
         MapPiece[,] pieces;
 
