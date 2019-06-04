@@ -42,17 +42,23 @@ namespace ZombiesVsHumans
 
         public static void Run()
         {
-            bool quit = false;
-
+            Map.ENUM_Simulation_Result result = Map.ENUM_Simulation_Result.Success;
             do
             {
                 Console.Clear();
-
-                map.Simulate();
-
-
+                result = map.Simulate();
             }
-            while (!quit);
+            while (result == Map.ENUM_Simulation_Result.Success);
+
+            if (result == Map.ENUM_Simulation_Result.GameOver)
+            {
+                Console.Clear();
+                map.Render();
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine();
+                Console.WriteLine("GAME OVER!!");
+                Console.ReadKey();
+            }
         }
     }
 }
