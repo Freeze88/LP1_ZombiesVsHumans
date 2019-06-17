@@ -8,6 +8,11 @@ namespace ZombiesVsHumans
 {
     public static class Utility
     {
+        public static bool GetUInt(string text, ref uint value)
+        {
+            return uint.TryParse(text, out value);
+        }
+
         public static Map.ENUM_Direction GetInverseDirection(Map.ENUM_Direction direction)
         {
             switch (direction)

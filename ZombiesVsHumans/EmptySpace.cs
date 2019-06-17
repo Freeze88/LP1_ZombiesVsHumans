@@ -22,7 +22,8 @@ namespace ZombiesVsHumans
 
                 Console.ForegroundColor = this.color;
                 //Console.Write(string.Format(" {0:F2} ", ZombieHash));
-                Console.Write("  .  ");
+                Console.Write(string.Format(" {0:F2} ", PlayerHash));
+                //Console.Write("  .  ");
 
                 Console.ForegroundColor = color;
             }

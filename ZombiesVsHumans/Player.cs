@@ -30,26 +30,34 @@ namespace ZombiesVsHumans
                 ConsoleColor color = Console.ForegroundColor;
 
                 if (IsTurn && CanControl)
+                {
                     Console.ForegroundColor = ConsoleColor.Magenta;
+                    Console.Write("  P  ");
+                }
                 else if (CanControl)
+                {
                     Console.ForegroundColor = ConsoleColor.DarkGreen;
+                    Console.Write("  P  ");
+                }
                 else
+                {
                     Console.ForegroundColor = this.color;
+                    Console.Write("  H  ");
 
-                Console.Write("  " + prefix + "  ");
-
+                }
                 Console.ForegroundColor = color;
             }
 
-            private ENUM_Direction GetDirectionFromHighestHash(Map map, int x, int y)
+            private ENUM_Direction GetDirectionFromHighestHash(Map map, Vector2 position)
             {
                 MapPiece rPiece = null;
-                MapPiece topPiece = map.GetPiece(ENUM_Direction.Up, (int)x, (int)y);
-                MapPiece leftPiece = map.GetPiece(ENUM_Direction.Left, (int)x, (int)y);
-                MapPiece rightPiece = map.GetPiece(ENUM_Direction.Right, (int)x, (int)y);
-                MapPiece bottomPiece = map.GetPiece(ENUM_Direction.Down, (int)x, (int)y);
+                MapPiece topPiece = map.GetPiece(ENUM_Direction.Up, position);
+                MapPiece leftPiece = map.GetPiece(ENUM_Direction.Left, position);
+                MapPiece rightPiece = map.GetPiece(ENUM_Direction.Right, position);
+                MapPiece bottomPiece = map.GetPiece(ENUM_Direction.Down, position);
 
-                rPiece = topPiece.ZombieHash > bottomPiece.ZombieHash ? topPiece : bottomPiece;
+                rPiece = topPiece;
+                rPiece = rPiece.ZombieHash > bottomPiece.ZombieHash ? rPiece : bottomPiece;
                 rPiece = rPiece.ZombieHash > leftPiece.ZombieHash ? rPiece : leftPiece;
                 rPiece = rPiece.ZombieHash > rightPiece.ZombieHash ? rPiece : rightPiece;
 
@@ -65,47 +73,9 @@ namespace ZombiesVsHumans
 
             public override void Move(Map map)
             {
-                ENUM_Direction direction = GetDirectionFromHighestHash(map, Position.X, Position.Y);
+                ENUM_Direction direction = GetDirectionFromHighestHash(map, Position);
 
-                int newX = Position.X;
-                int newY = Position.Y;
-
-                switch (direction)
-                {
-                    case ENUM_Direction.Up:
-                        if (Position.Y == 0)
-                            newY = map.pieces.GetLength(1) - 1;
-                        else
-                            newY = Position.Y - 1;
-                        break;
-                    case ENUM_Direction.Down:
-                        if (Position.Y == map.pieces.GetLength(1) - 1)
-                            newY = 0;
-                        else
-                            newY = Position.Y + 1;
-                        break;
-                    case ENUM_Direction.Left:
-                        if (Position.X == 0)
-                            newX = map.pieces.GetLength(0) - 1;
-                        else
-                            newY = Position.X - 1;
-                        break;
-                    case ENUM_Direction.Right:
-                        if (Position.X == map.pieces.GetLength(0) - 1)
-                            newX = 0;
-                        else
-                            newX = Position.X + 1;
-                        break;
-                }
-
-                if (!(map.pieces[newX, newY] is EmptySpace))
-                    return;
-
-                Vector2 oldPosition = new Vector2(Position.X, Position.Y);
-
-                Position = new Vector2(newX, newY);
-
-                HasMoved(direction, oldPosition);
+                MoveToDirection(map, direction);
             }
 
             public override bool Move(Map map, ENUM_Direction direction)
@@ -170,16 +140,16 @@ namespace ZombiesVsHumans
                                 for (uint x = 0; x < map.pieces.GetLength(0); x++)
                                 {
                                     float yPos = (float)y;
-                                    if (map.Distance(x, y, playerPos[0], playerPos[1]) > map.Distance(x, y - map.pieces.GetLength(1), playerPos[0], playerPos[1]))
+                                    if (Vector2.Distance(x, y, playerPos[0], playerPos[1]) > Vector2.Distance(x, y - map.pieces.GetLength(1), playerPos[0], playerPos[1]))
                                         yPos = y - map.pieces.GetLength(1);
-                                    else if (map.Distance(x, y, playerPos[0], playerPos[1]) > map.Distance(x, playerPos[1] - y - 2, playerPos[0], playerPos[1]))
-                                        yPos = playerPos[1] - y - 2;
+                                    else if (Vector2.Distance(x, y, playerPos[0], playerPos[1]) > Vector2.Distance(x, y + map.pieces.GetLength(1), playerPos[0], playerPos[1]))
+                                        yPos = Math.Abs(y + map.pieces.GetLength(1));
 
                                     float xPos = x;
-                                    if (map.Distance(x, y, playerPos[0], playerPos[1]) > map.Distance(x - map.pieces.GetLength(0), y, playerPos[0], playerPos[1]))
+                                    if (Vector2.Distance(x, y, playerPos[0], playerPos[1]) > Vector2.Distance(x - map.pieces.GetLength(0), y, playerPos[0], playerPos[1]))
                                         xPos = x - map.pieces.GetLength(0);
-                                    else if (map.Distance(x, y, playerPos[0], playerPos[1]) > map.Distance((playerPos[0] - x - 2), y, playerPos[0], playerPos[1]))
-                                        xPos = playerPos[0] - x - 2;
+                                    else if (Vector2.Distance(x, y, playerPos[0], playerPos[1]) > Vector2.Distance(x + map.pieces.GetLength(0), y, playerPos[0], playerPos[1]))
+                                        xPos = x + map.pieces.GetLength(0);
 
                                     float pxPos = (float)playerPos[0];
                                     float pyPos = (float)playerPos[1];
