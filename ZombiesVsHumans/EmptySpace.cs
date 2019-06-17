@@ -1,21 +1,32 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace ZombiesVsHumans
 {
-    class EmptySpace : Map.MapPiece
+    public partial class Map
     {
-        public EmptySpace(Map map) : base(map,' ', ConsoleColor.White) { }
-
-        public override void Print()
+        internal class EmptySpace : MapPiece
         {
-            ConsoleColor color = Console.ForegroundColor;
+            public EmptySpace(Vector2 position)
+                : base(position, ' ', ConsoleColor.White)
+            {
 
-            Console.ForegroundColor = this.color;
-            Console.Write(" . ");
+            }
 
-            Console.ForegroundColor = color;
+            public override void Print()
+            {
+                ConsoleColor color = Console.ForegroundColor;
+
+                Console.ForegroundColor = this.color;
+                //Console.Write(string.Format(" {0:F2} ", ZombieHash));
+                Console.Write(string.Format(" {0:F2} ", PlayerHash));
+                //Console.Write("  .  ");
+
+                Console.ForegroundColor = color;
+            }
         }
     }
 }

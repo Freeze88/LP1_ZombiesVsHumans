@@ -8,23 +8,24 @@ namespace ZombiesVsHumans
 {
     public partial class Map
     {
-        internal partial class Zombie : MapPiece
+        internal partial class Zombie : Character
         {
-            public Zombie(Map map)
-                : base(map, 'z', ConsoleColor.Red)
+            public Zombie(Vector2 position)
+                : base(position, 'z', ConsoleColor.Red)
             {
 
             }
 
-            private ENUM_Direction GetDirectionFromLowestHash(uint x, uint y)
+            private ENUM_Direction GetDirectionFromLowestHash(Map map, Vector2 position)
             {
                 MapPiece rPiece = null;
-                MapPiece topPiece = map.GetPiece(ENUM_Direction.Up, (int)x, (int)y - 1);
-                MapPiece leftPiece = map.GetPiece(ENUM_Direction.Left, (int)x - 1, (int)y);
-                MapPiece rightPiece = map.GetPiece(ENUM_Direction.Right, (int)x + 1, (int)y);
-                MapPiece bottomPiece = map.GetPiece(ENUM_Direction.Down, (int)x, (int)y + 1);
+                MapPiece topPiece = map.GetPiece(ENUM_Direction.Up, position);
+                MapPiece leftPiece = map.GetPiece(ENUM_Direction.Left, position);
+                MapPiece rightPiece = map.GetPiece(ENUM_Direction.Right, position);
+                MapPiece bottomPiece = map.GetPiece(ENUM_Direction.Down, position);
 
-                rPiece = topPiece.PlayerHash < bottomPiece.PlayerHash ? topPiece : bottomPiece;
+                rPiece = topPiece;
+                rPiece = rPiece.PlayerHash < bottomPiece.PlayerHash ? rPiece : bottomPiece;
                 rPiece = rPiece.PlayerHash < leftPiece.PlayerHash ? rPiece : leftPiece;
                 rPiece = rPiece.PlayerHash < rightPiece.PlayerHash ? rPiece : rightPiece;
 
@@ -38,59 +39,88 @@ namespace ZombiesVsHumans
                 return ENUM_Direction.Up;
             }
 
-            public override void Move()
+            public static void CalculateHash(Map map)
             {
-                for (uint y = 0; y < map.pieces.GetLength(1); y++)
-                    for (uint x = 0; x < map.pieces.GetLength(0); x++)
-                        if (map.pieces[x, y] == this)
+                for (uint y1 = 0; y1 < map.pieces.GetLength(1); y1++)
+                    for (uint x1 = 0; x1 < map.pieces.GetLength(0); x1++)
+                        map.pieces[x1, y1].SetZombieHash(float.MaxValue);
+
+                for (uint y1 = 0; y1 < map.pieces.GetLength(1); y1++)
+                    for (uint x1 = 0; x1 < map.pieces.GetLength(0); x1++)
+                    {
+                        if (map.pieces[x1, y1] is Zombie)
                         {
-                            ENUM_Direction direction = GetDirectionFromLowestHash(x, y);
+                            uint[] playerPos = new uint[] { x1, y1 };
 
-                            uint newX = x;
-                            uint newY = y;
+                            for (uint y = 0; y < map.pieces.GetLength(1); y++)
+                                for (uint x = 0; x < map.pieces.GetLength(0); x++)
+                                {
+                                    float yPos = (float)y;
+                                    if (Vector2.Distance(x, y, playerPos[0], playerPos[1]) > Vector2.Distance(x, y - map.pieces.GetLength(1), playerPos[0], playerPos[1]))
+                                        yPos = y - map.pieces.GetLength(1);
+                                    else if (Vector2.Distance(x, y, playerPos[0], playerPos[1]) > Vector2.Distance(x, y + map.pieces.GetLength(1), playerPos[0], playerPos[1]))
+                                        yPos = Math.Abs(y + map.pieces.GetLength(1));
 
-                            switch (direction)
-                            {
-                                case ENUM_Direction.Up:
-                                    if (y == 0)
-                                        newY = (uint)map.pieces.GetLength(1) - 1;
-                                    else
-                                        newY = y - 1;
-                                    break;
-                                case ENUM_Direction.Down:
-                                    if (y == map.pieces.GetLength(1) - 1)
-                                        newY = 0;
-                                    else
-                                        newY = y + 1;
-                                    break;
-                                case ENUM_Direction.Left:
-                                    if (x == 0)
-                                        newX = (uint)map.pieces.GetLength(0) - 1;
-                                    else
-                                        newX = x - 1;
-                                    break;
-                                case ENUM_Direction.Right:
-                                    if (x == map.pieces.GetLength(0) - 1)
-                                        newX = 0;
-                                    else
-                                        newX = x + 1;
-                                    break;
-                            }
+                                    float xPos = x;
+                                    if (Vector2.Distance(x, y, playerPos[0], playerPos[1]) > Vector2.Distance(x - map.pieces.GetLength(0), y, playerPos[0], playerPos[1]))
+                                        xPos = x - map.pieces.GetLength(0);
+                                    else if (Vector2.Distance(x, y, playerPos[0], playerPos[1]) > Vector2.Distance(x + map.pieces.GetLength(0), y, playerPos[0], playerPos[1]))
+                                        xPos = x + map.pieces.GetLength(0);
 
-                            Console.WriteLine("Moved " + direction.ToString());
+                                    float pxPos = (float)playerPos[0];
+                                    float pyPos = (float)playerPos[1];
 
-                            EmptySpace space = new EmptySpace(map);
-                            space.SetPlayerHash(map.pieces[x, y].PlayerHash);
-                            space.SetZombieHash(map.pieces[x, y].ZombieHash);
-                            map.pieces[x, y] = space;
-
-                            this.SetZombieHash(map.pieces[newX, newY].ZombieHash);
-                            this.SetPlayerHash(map.pieces[newX, newY].PlayerHash);
-
-                            map.pieces[newX, newY] = this;
-
-                            return;
+                                    float min = (float)Math.Sqrt(Math.Pow(pxPos - xPos, 2) + Math.Pow(pyPos - yPos, 2));
+                                    map.pieces[x, y].SetZombieHash(Mathf.Min(min, map.pieces[x, y].ZombieHash));
+                                }
                         }
+                    }
+            }
+
+            public static void Infect(Map map)
+            {
+                foreach (Zombie zombie in map.zombies.ToArray())
+                {
+                    MapPiece topPiece = map.GetPiece(ENUM_Direction.Up, zombie.Position);
+                    MapPiece rightPiece = map.GetPiece(ENUM_Direction.Right, zombie.Position);
+                    MapPiece leftPiece = map.GetPiece(ENUM_Direction.Left, zombie.Position);
+                    MapPiece bottomPiece = map.GetPiece(ENUM_Direction.Down, zombie.Position);
+
+                    if (topPiece is Player playa1)
+                    {
+                        map.Add(new Zombie(new Vector2(topPiece.Position)));
+
+                        playa1.Infect();
+                    }
+
+                    if (bottomPiece is Player playa2)
+                    {
+                        map.Add(new Zombie(new Vector2(bottomPiece.Position)));
+
+                        playa2.Infect();
+                    }
+
+                    if (rightPiece is Player playa3)
+                    {
+                        map.Add(new Zombie(new Vector2(rightPiece.Position)));
+
+                        playa3.Infect();
+                    }
+
+                    if (leftPiece is Player playa4)
+                    {
+                        map.Add(new Zombie(new Vector2(leftPiece.Position)));
+
+                        playa4.Infect();
+                    }
+                }
+            }
+
+            public override void Move(Map map)
+            {
+                ENUM_Direction direction = GetDirectionFromLowestHash(map, Position);
+
+                MoveToDirection(map, direction);
             }
         }
     }
