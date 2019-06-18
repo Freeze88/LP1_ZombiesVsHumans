@@ -8,120 +8,264 @@ namespace ZombiesVsHumans
 {
     public partial class Map
     {
-        internal abstract class MapPiece
+        public enum ENUM_Direction : ushort
         {
-            protected ConsoleColor color;
-            char prefix = ' ';
-
-            public MapPiece(char prefix = ' ', ConsoleColor color = ConsoleColor.White)
-            {
-                this.prefix = prefix;
-                this.color = color;
-                Hash = float.MaxValue;
-            }
-
-            public override string ToString()
-            {
-                return prefix.ToString();
-            }
-
-            public void SetHash(float value)
-            {
-                Hash = value;
-            }
-
-            public virtual void Print()
-            {
-                ConsoleColor color = Console.ForegroundColor;
-
-                Console.ForegroundColor = this.color;
-                Console.Write(prefix);
-
-                Console.ForegroundColor = color;
-            }
-
-            public float Hash { get; private set; }
+            Up = 0,
+            Down = 1,
+            Left = 2,
+            Right = 3
         }
 
-        internal class EmptySpace : MapPiece
+        public enum ENUM_Simulation_Result : ushort
         {
-            public EmptySpace() : base(' ', ConsoleColor.White) { }
-
-            public override void Print()
-            {
-                ConsoleColor color = Console.ForegroundColor;
-
-                Console.ForegroundColor = this.color;
-                Console.Write(string.Format("{0:F2} ; ", Hash));
-
-                Console.ForegroundColor = color;
-            }
+            Success = 0,
+            GameOver = 1,
+            Quit = 2,
         }
 
         MapPiece[,] pieces;
+        List<Player> players = new List<Player>();
+        List<Player> NPCs = new List<Player>();
+        internal List<Zombie> zombies = new List<Zombie>();
+        int playerIndex = 0;
 
         public Map(uint mapWidth, uint mapHeight, uint playerCount, uint playersToControl, uint zombieCount)
         {
             pieces = new MapPiece[mapWidth, mapHeight];
             for (int y = 0; y < mapHeight; y++)
                 for (int x = 0; x < mapWidth; x++)
-                    pieces[x, y] = new EmptySpace();
+                    Add(new EmptySpace(new Vector2(x, y)));
 
             for (uint i = 0, j = 0; i < playerCount; i++, j++)
-            {
-                pieces[Mathf.RandomRange(1, (int)mapWidth), Mathf.RandomRange(1, (int)mapHeight)] = new Player(j <= playersToControl);
-            }
+                PlacePlayer(j < playersToControl, i == 0);
 
             for (uint i = 0; i < zombieCount; i++)
-                pieces[Mathf.RandomRange(1, (int)mapWidth), Mathf.RandomRange(1, (int)mapHeight)] = new Zombie();
+                PlaceZombie();
 
-            CalculateHash();
+            Update();
         }
 
-        public void CalculateHash()
+        private void PlacePlayer(bool canControl, bool isTurn)
         {
-            for (uint y1 = 0; y1 < pieces.GetLength(1); y1++)
-                for (uint x1 = 0; x1 < pieces.GetLength(0); x1++)
+            int posX = Mathf.RandomRange(0, pieces.GetLength(0) - 1);
+            int posY = Mathf.RandomRange(0, pieces.GetLength(1) - 1);
+
+            Player playa = new Player(new Vector2(posX, posY), canControl, isTurn);
+
+            if (canControl)
+            {
+                players.Add(playa);
+                playa.OnInfected += OnPlayerInfected;
+            }
+            else
+            {
+                NPCs.Add(playa);
+                playa.OnInfected += OnNPCInfected;
+            }
+            Add(playa);
+
+        }
+
+        private void OnPlayerInfected(Player sender)
+        {
+            players.Remove(sender);
+            sender.OnMoved -= OnCharacterMoved;
+        }
+
+        private void OnNPCInfected(Player sender)
+        {
+            NPCs.Remove(sender);
+            sender.OnMoved -= OnCharacterMoved;
+        }
+
+        private void PlaceZombie()
+        {
+            int x = 0,
+                y = 0;
+            do
+            {
+                x = Mathf.RandomRange(1, pieces.GetLength(0) - 1);
+                y = Mathf.RandomRange(1, pieces.GetLength(1) - 1);
+            } while (!(pieces[x, y] is EmptySpace));
+
+            Zombie zombie = new Zombie(new Vector2(x, y));
+            Add(zombie);
+        }
+
+        private void Add(MapPiece piece)
+        {
+            if (piece is Character auxCharacter)
+                auxCharacter.OnMoved -= OnCharacterMoved;
+
+            pieces[piece.Position.X, piece.Position.Y] = piece;
+
+            if (piece is Character character)
+                character.OnMoved += OnCharacterMoved;
+
+            if (piece is Zombie zombie && !zombies.Contains(zombie))
+            {
+                zombies.Add(zombie);
+                zombie.Propegate(this);
+            }
+        }
+
+        private void OnCharacterMoved(Character sender, ENUM_Direction direction, Vector2 oldPosition)
+        {
+            EmptySpace space = new EmptySpace(oldPosition);
+            space.SetPlayerHash(pieces[space.Position.X, space.Position.Y].PlayerHash);
+            space.SetZombieHash(pieces[space.Position.X, space.Position.Y].ZombieHash);
+            Add(space);
+
+            sender.SetZombieHash(pieces[sender.Position.X, sender.Position.Y].ZombieHash);
+            sender.SetPlayerHash(pieces[sender.Position.X, sender.Position.Y].PlayerHash);
+            Add(sender);
+        }
+
+        public ENUM_Simulation_Result Simulate()
+        {
+            ENUM_Simulation_Result simulationResult = ENUM_Simulation_Result.Success;
+
+            Render();
+
+            string input = "";
+            if (players.Count > 0 || NPCs.Count > 0)
+                do
                 {
-                    if (pieces[x1, y1] is Player)
-                    {
-                        uint[] playerPos = new uint[] { x1, y1 };
+                    if (players.Count == 0 || !CanMove)
+                        Console.Write("Press Enter To Simulate! or write 'quit' to Exit");
+                    else
+                        Console.Write("(w, s, a, d) To move the magenta player ; 'quit' to Exit : ");
 
-                        for (uint y = 0; y < pieces.GetLength(1); y++)
-                            for (uint x = 0; x < pieces.GetLength(0); x++)
-                            {
-                                float yPos = y;
-                                if (Distance(x, y, playerPos[0], playerPos[1]) > Distance(x, y - pieces.GetLength(1), playerPos[0], playerPos[1]))
-                                    yPos = y - pieces.GetLength(1);
+                    input = Console.ReadLine();
+                } while (!ApplyInput(input));
 
-                                float xPos = x;
-                                if (Distance(x, y, playerPos[0], playerPos[1]) > Distance(x - pieces.GetLength(0), y, playerPos[0], playerPos[1]))
-                                    xPos = x - pieces.GetLength(0);
+            SwitchTurn();
 
-                                float pxPos = playerPos[0];
-                                float pyPos = playerPos[1];
+            if (players.Count == 0 && NPCs.Count == 0)
+                simulationResult = ENUM_Simulation_Result.GameOver;
 
-                                float min = (float)Math.Sqrt(Math.Pow(pxPos - xPos, 2) + Math.Pow(pyPos - yPos, 2));
-                                pieces[x, y].SetHash(Mathf.Min(min, pieces[x, y].Hash));
-                            }
-                    }
-                }
-        }
-        public float Distance(float x1, float y1, float x2, float y2)
-        {
-            return (float)Math.Sqrt(Math.Pow(x2 - x1, 2) + Math.Pow(y2 - y1, 2));
+            if (input.ToLower() == "quit")
+                simulationResult = ENUM_Simulation_Result.Quit;
+
+            return simulationResult;
         }
 
-        public void Simulate()
+        public void Render()
         {
             for (uint y = 0; y < pieces.GetLength(1); y++)
             {
                 for (uint x = 0; x < pieces.GetLength(0); x++)
-                {
                     pieces[x, y].Print();
-                }
+
                 Console.WriteLine();
+            }
+        }
+
+        private bool ApplyInput(string input)
+        {
+            if (players.Count == 0 || !CanMove)
+                return true;
+
+            if (input.ToLower() == "w")
+                return players[playerIndex].Move(this, ENUM_Direction.Up);
+            else if (input.ToLower() == "s")
+                return players[playerIndex].Move(this, ENUM_Direction.Down);
+            else if (input.ToLower() == "a")
+                return players[playerIndex].Move(this, ENUM_Direction.Left);
+            else if (input.ToLower() == "d")
+                return players[playerIndex].Move(this, ENUM_Direction.Right);
+
+            return true;
+        }
+
+        private void SwitchTurn()
+        {
+            if (players.Count == 0)
+            {
+                ApplyAI();
+                return;
+            }
+
+            players[playerIndex].SetTurn(false);
+
+            playerIndex++;
+            if (playerIndex >= players.Count)
+            {
+                playerIndex = 0;
+                ApplyAI();
+            }
+            else
+                Update();
+
+            if (players.Count > 0)
+                players[playerIndex].SetTurn(true);
+        }
+
+        private void ApplyAI()
+        {
+            foreach (Player player in NPCs.ToArray())
+                player.Move(this);
+            MapPiece.CalculateHash(this);
+
+            foreach (Zombie zombie in zombies.ToArray())
+                zombie.Move(this);
+            MapPiece.CalculateHash(this);
+
+            Zombie.Infect(this);
+        }
+
+        private void Update()
+        {
+            MapPiece.CalculateHash(this);
+            Zombie.Infect(this);
+
+            if (playerIndex >= players.Count)
+                playerIndex = 0;
+        }
+
+        internal MapPiece GetPiece(ENUM_Direction dir, Vector2 position)
+        {
+            switch (dir)
+            {
+                case ENUM_Direction.Up:
+                    if (position.Y == 0)
+                        return pieces[position.X, pieces.GetLength(1) - 1];
+                    else
+                        return pieces[position.X, position.Y - 1];
+                case ENUM_Direction.Down:
+                    if (position.Y == pieces.GetLength(1) - 1)
+                        return pieces[position.X, 0];
+                    else
+                        return pieces[position.X, position.Y + 1];
+                case ENUM_Direction.Left:
+                    if (position.X == 0)
+                        return pieces[pieces.GetLength(0) - 1, position.Y];
+                    else
+                        return pieces[position.X - 1, position.Y];
+                case ENUM_Direction.Right:
+                    if (position.X == pieces.GetLength(0) - 1)
+                        return pieces[0, position.Y];
+                    else
+                        return pieces[position.X + 1, position.Y];
+            }
+
+            return null;
+        }
+
+        private bool CanMove
+        {
+            get
+            {
+                MapPiece topPiece = GetPiece(ENUM_Direction.Up, players[playerIndex].Position);
+                MapPiece BottomPiece = GetPiece(ENUM_Direction.Down, players[playerIndex].Position);
+                MapPiece leftPiece = GetPiece(ENUM_Direction.Left, players[playerIndex].Position);
+                MapPiece rightPiece = GetPiece(ENUM_Direction.Right, players[playerIndex].Position);
+
+                return topPiece is EmptySpace || BottomPiece is EmptySpace || leftPiece is EmptySpace || rightPiece is EmptySpace;
             }
         }
     }
 }
+
+
+

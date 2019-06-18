@@ -6,12 +6,11 @@ using System.Threading.Tasks;
 
 namespace ZombiesVsHumans
 {
-    class Program
+    public static class Utility
     {
-        static void Main(string[] args)
+        public static bool GetUInt(string text, ref uint value)
         {
-            Application.Initialize();
-            Application.Run();
+            return uint.TryParse(text, out value);
         }
     }
 }
