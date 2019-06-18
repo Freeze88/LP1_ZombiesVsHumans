@@ -17,7 +17,7 @@ Fez o relatório.
 
 * O mapa é criado "internamente" sendo um array de tudo o que está o mapa incluindo espaços vazios, este guarda as posições, valores (Hashes) e o tipo de objeto lá (humano ou zombie), ele é criado vizualmente nas suas partes respetivas, por exemplo a class human apresenta os humanos, os zombies apresenta os mesmos e a classe espaço vazio apresenta-se visualmente dentro de si própria.
 
-* A IA funciona por base de "Hashes", de forma simples os Zombies e humanos forma hashes á sua volta tendo o menor valor onde estão e o maior valor no lugar em que a distãncia é maior, De seguida os zombies procuram nas Hashes dos humanos qual é o menos valor na área circundante e movem-se nessa direção. Os humanos fazem o mesmo exceto que vão para o maior número.
+* A IA funciona por base de "Hashes", de forma simples os Zombies e humanos formam hashes á sua volta tendo o menor valor onde estão e o maior valor no lugar em que a distãncia é maior, De seguida os zombies procuram nas Hashes dos humanos qual é o menor valor na área circundante e movem-se nessa direção. Os humanos fazem o mesmo exceto que vão para o maior número.
 
 * O Fluxograma e o diagrama UML encontram-se na pasta do projeto.
 
@@ -27,7 +27,7 @@ Fez o relatório.
 
 * A IA faz default a ir para a direita;
 * As *Hashes* nem sempre são bem calculadas;
-* Os humanos podem ficar a andar, infinitamente, para uma só direção.
+* Os humanos e os Zombies podem ficar, infinitamente, a andar numa direção.
 
 ### Conclusão
 
