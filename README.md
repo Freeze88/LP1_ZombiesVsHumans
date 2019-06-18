@@ -21,6 +21,8 @@ Fez o relatório.
 
 * O Fluxograma e o diagrama UML encontram-se na pasta do projeto.
 
+* Para jogar o jogo basta abrir o cmd na pasta que contem as classes do programa e meter as seguintes informações nesta ordem: x(largura do mapa), y(altura do mapa), número de zombies(z), número de humanos(h), número de humanos controláveis(H) e número de turnos(t). Exemplo: ```dotnet run -- -x 10 -y 10 -z 1 -h 1 -H 1 -t 100```
+
 ### Bugs
 
 * A IA faz default a ir para a direita;
