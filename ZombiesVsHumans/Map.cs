@@ -103,7 +103,10 @@ namespace ZombiesVsHumans
                 character.OnMoved += OnCharacterMoved;
 
             if (piece is Zombie zombie && !zombies.Contains(zombie))
+            {
                 zombies.Add(zombie);
+                zombie.Propegate(this);
+            }
         }
 
         private void OnCharacterMoved(Character sender, ENUM_Direction direction, Vector2 oldPosition)
@@ -202,20 +205,22 @@ namespace ZombiesVsHumans
         {
             foreach (Player player in NPCs.ToArray())
                 player.Move(this);
-            Player.CalculateHash(this);
+            MapPiece.CalculateHash(this);
 
             foreach (Zombie zombie in zombies.ToArray())
                 zombie.Move(this);
-            Zombie.CalculateHash(this);
+            MapPiece.CalculateHash(this);
 
             Zombie.Infect(this);
         }
 
         private void Update()
         {
-            Player.CalculateHash(this);
-            Zombie.CalculateHash(this);
+            MapPiece.CalculateHash(this);
             Zombie.Infect(this);
+
+            if (playerIndex >= players.Count)
+                playerIndex = 0;
         }
 
         internal MapPiece GetPiece(ENUM_Direction dir, Vector2 position)
@@ -261,5 +266,6 @@ namespace ZombiesVsHumans
         }
     }
 }
+
 
 

@@ -27,10 +27,5 @@ namespace ZombiesVsHumans
         {
             return (float)Math.Sqrt(Math.Pow(x2 - x1, 2) + Math.Pow(y2 - y1, 2));
         }
-
-        public static float Distance(Vector2 a, Vector2 b)
-        {
-            return (float)Math.Sqrt(Math.Pow(b.X - a.X, 2) + Math.Pow(b.Y - a.Y, 2));
-        }
     }
 }

@@ -20,7 +20,39 @@ namespace ZombiesVsHumans
 
             }
 
-            protected void MoveToDirection(Map map, ENUM_Direction direction)
+            protected ENUM_Direction GetDirectionFromHash(Map map, Vector2 position, bool isZombie)
+            {
+                MapPiece rPiece = null;
+                MapPiece topPiece = map.GetPiece(ENUM_Direction.Up, position);
+                MapPiece leftPiece = map.GetPiece(ENUM_Direction.Left, position);
+                MapPiece rightPiece = map.GetPiece(ENUM_Direction.Right, position);
+                MapPiece bottomPiece = map.GetPiece(ENUM_Direction.Down, position);
+
+                rPiece = topPiece;
+                if (isZombie)
+                {
+                    rPiece = rPiece.PlayerHash < bottomPiece.PlayerHash ? rPiece : bottomPiece;
+                    rPiece = rPiece.PlayerHash < leftPiece.PlayerHash ? rPiece : leftPiece;
+                    rPiece = rPiece.PlayerHash < rightPiece.PlayerHash ? rPiece : rightPiece;
+                }
+                else
+                {
+                    rPiece = rPiece.ZombieHash > bottomPiece.ZombieHash ? rPiece : bottomPiece;
+                    rPiece = rPiece.ZombieHash > leftPiece.ZombieHash ? rPiece : leftPiece;
+                    rPiece = rPiece.ZombieHash > rightPiece.ZombieHash ? rPiece : rightPiece;
+                }
+
+                if (rPiece == bottomPiece)
+                    return ENUM_Direction.Down;
+                else if (rPiece == leftPiece)
+                    return ENUM_Direction.Left;
+                else if (rPiece == rightPiece)
+                    return ENUM_Direction.Right;
+
+                return ENUM_Direction.Up;
+            }
+
+            protected bool MoveToDirection(Map map, ENUM_Direction direction)
             {
                 int newX = Position.X;
                 int newY = Position.Y;
@@ -54,25 +86,22 @@ namespace ZombiesVsHumans
                 }
 
                 if (!(map.pieces[newX, newY] is EmptySpace))
-                    return;
+                    return false;
 
                 Vector2 oldPosition = new Vector2(Position.X, Position.Y);
 
                 Position = new Vector2(newX, newY);
 
-                HasMoved(direction, oldPosition);
-            }
-
-            protected void HasMoved(ENUM_Direction direction, Vector2 oldPosition)
-            {
                 OnMoved?.Invoke(this, direction, oldPosition);
+
+                return true;
             }
 
             public abstract void Move(Map map);
 
-            public virtual bool Move(Map map, ENUM_Direction direction)
+            public bool Move(Map map, ENUM_Direction direction)
             {
-                return false;
+                return MoveToDirection(map, direction);
             }
         }
     }
